@@ -26,7 +26,7 @@ var call = ms1
 		new CallOptions<int>
 		{
 			Route = "Id",
-			Policys = Policy<int>.Handle<Exception>().Retry((delegateResult, i) => Console.WriteLine("Retrying")),
+			Policies = Policy<int>.Handle<Exception>().Retry((delegateResult, i) => Console.WriteLine("Retrying")),
 			Interval = (_) => TimeSpan.FromSeconds(1) ,
 		})
 	.Validate(value => value != 0);

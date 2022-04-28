@@ -20,11 +20,11 @@ public class Call<T>
 		
 		watch.Reset();
 		watch.Start();
-		var callChain = CallOptions.Policys;
+		var callChain = CallOptions.Policies;
 		
 		if (Route.Faults != null)
 		{
-			callChain = Policy.Wrap<T>(CallOptions.Policys, Route.Faults);
+			callChain = Policy.Wrap<T>(CallOptions.Policies, Route.Faults);
 		}
 
 		var result = new CallResult<T>();

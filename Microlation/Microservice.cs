@@ -1,9 +1,14 @@
 ﻿namespace Microlation;
 
+/// <summary>
+/// Represents a Microservices with defined <see cref="Route{T}"/>s.
+/// </summary>
 public class Microservice
 {
+	/// <summary>
+	/// <see cref="Route{T}"/>s of the Microservice. Can be used by other Microservices to perform calls.
+	/// </summary>
 	public List<IRoute> Routes = new();
-
 
 	public Call<T> Call<T>(Microservice ms, CallOptions<T> callOptions)
 	{
