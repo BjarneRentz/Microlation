@@ -10,19 +10,21 @@ public class Call<T>
 	
 	public List<Func<T, bool>> Validators { get; } = new();
 
-	public ISyncPolicy<T> Policies { private get; init; }
+	public CallOptions<T> CallOptions { private get; init; }
 
 	public Route<T> Route;
 
-	public CallResult<T> Execute()
+	public async Task<CallResult<T>>Execute(int iteration = 0)
 	{
+		await Task.Delay(CallOptions.Interval(iteration));
+		
 		watch.Reset();
 		watch.Start();
-		var callChain = Policies;
+		var callChain = CallOptions.Policys;
 		
 		if (Route.Faults != null)
 		{
-			callChain = Policy.Wrap<T>(Policies, Route.Faults);
+			callChain = Policy.Wrap<T>(CallOptions.Policys, Route.Faults);
 		}
 
 		var result = new CallResult<T>();
