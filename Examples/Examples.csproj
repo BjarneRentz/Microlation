@@ -11,4 +11,8 @@
       <ProjectReference Include="..\Microlation\Microlation.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Polly.Contrib.Simmy" Version="0.3.0" />
+    </ItemGroup>
+
 </Project>

@@ -7,11 +7,12 @@ public class Microservice
 
 	public Call<T> Call<T>(Microservice ms, CallOptions<T> callOptions)
 	{
-		var route = ms.Routes.First(r => r.Url == callOptions.Route);
-
+		var route = ms.Routes.First(r => r.Url == callOptions.Route) ?? throw new ArgumentException(string.Format("Could not find Route: {0} on given Microservice", callOptions.Route));
+		
 		return new Call<T>
 		{
-			Policy = callOptions.Policys
+			Policies = callOptions.Policys,
+			Route = (Route<T>) route,
 		};
 	}
 }

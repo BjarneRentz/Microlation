@@ -1,7 +1,9 @@
-﻿namespace Microlation;
+﻿using Polly;
+
+namespace Microlation;
 
 public class CallOptions<T>
 {
-	public IPolicy<T> Policys;
+	public ISyncPolicy<T> Policys;
 	public string Route { get; set; }
 }
