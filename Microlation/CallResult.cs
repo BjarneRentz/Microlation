@@ -3,14 +3,8 @@
 /// <summary>
 /// Represent the result of a single call.
 /// </summary>
-/// <typeparam name="T">Return type of the called <see cref="Route{T}"/>.</typeparam>
-public record CallResult<T>
+public record CallResult
 {
-	/// <summary>
-	/// Result / value of the call.
-	/// </summary>
-	public T? Result;
-	
 	/// <summary>
 	/// Exception that was thrown during the call.
 	/// </summary>

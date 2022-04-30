@@ -3,7 +3,7 @@ using Polly;
 
 namespace Microlation;
 
-public class Call<T>
+public class Call<T> : ICall
 {
 
 	private readonly Stopwatch watch = new();
@@ -14,9 +14,9 @@ public class Call<T>
 
 	public Route<T> Route;
 
-	public async Task<CallResult<T>>Execute(int iteration = 0)
+	public async Task<CallResult>Execute(CancellationToken token, int iteration = 0)
 	{
-		await Task.Delay(CallOptions.Interval(iteration));
+		await Task.Delay(CallOptions.Interval(iteration), token);
 		
 		watch.Reset();
 		watch.Start();
@@ -27,13 +27,12 @@ public class Call<T>
 			callChain = Policy.Wrap<T>(CallOptions.Policies, Route.Faults);
 		}
 
-		var result = new CallResult<T>();
+		var result = new CallResult();
 		
 		try
 		{
 			var value = callChain.Execute(() => Route.Value());
 			watch.Stop();
-			result.Result = value;
 			result.CallDuration = watch.Elapsed;
 			
 			result.Valid = Validators.Any() && Validators.Aggregate(true, (curr, next) => curr && next(value));
