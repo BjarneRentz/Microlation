@@ -12,7 +12,11 @@ public class Call<T> : ICall
 
 	public CallOptions<T> CallOptions { private get; init; }
 
-	public Route<T> Route;
+	public Route<T> TypedRoute;
+
+	public Microservice Microservice { get; init; }
+
+	public IRoute Route => TypedRoute;
 
 	public async Task<CallResult>Execute(CancellationToken token, int iteration = 0)
 	{
@@ -22,16 +26,16 @@ public class Call<T> : ICall
 		watch.Start();
 		var callChain = CallOptions.Policies;
 		
-		if (Route.Faults != null)
+		if (TypedRoute.Faults != null)
 		{
-			callChain = Policy.Wrap<T>(CallOptions.Policies, Route.Faults);
+			callChain = Policy.Wrap<T>(CallOptions.Policies, TypedRoute.Faults);
 		}
 
 		var result = new CallResult();
 		
 		try
 		{
-			var value = callChain.Execute(() => Route.Value());
+			var value = callChain.Execute(() => TypedRoute.Value());
 			watch.Stop();
 			result.CallDuration = watch.Elapsed;
 			

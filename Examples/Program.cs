@@ -12,12 +12,14 @@ var latency =
 
 var faults = latency.Wrap(error);
 
-var ms1 = new Microservice();
-var ms2 = new Microservice
+var ms1 = new Microservice("MS1");
+var ms2 = new Microservice("MS2")
 {
+	Name = "MS2",
 	Routes = new List<IRoute>
 	{
-		new Route<int> { Url = "Id", Value = () => 1, Faults = faults }
+		new Route<int> { Url = "Id", Value = () => 1, Faults = faults },
+		new Route<int> {Url = "Age", Value = () => 50, Faults = faults}
 	}
 };
 
@@ -31,6 +33,19 @@ var call = ms1
 		})
 	.Validate(value => value != 0);
 
-var result = await ms1.Simulate(TimeSpan.FromSeconds(100));
+ms1.Call(ms2,
+	new CallOptions<int>
+	{
+		Route = "Age",
+		Policies = Policy<int>.Handle<Exception>().Retry(),
+		Interval = (_) => TimeSpan.FromMilliseconds(Random.Shared.Next(100,700)) ,
+	});
 
-result.First().ForEach(Console.WriteLine);
+var result = await ms1.Simulate(TimeSpan.FromSeconds(10));
+
+foreach (var route in result.Keys)
+{
+	Console.WriteLine("***{0}***", route.CallUri);
+	
+	result[route].ForEach(Console.WriteLine);
+}

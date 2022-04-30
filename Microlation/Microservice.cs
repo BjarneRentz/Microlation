@@ -5,6 +5,8 @@
 /// </summary>
 public class Microservice
 {
+	public string Name;
+	
 	/// <summary>
 	/// <see cref="Route{T}"/>s of the Microservice. Can be used by other Microservices to perform calls.
 	/// </summary>
@@ -14,6 +16,11 @@ public class Microservice
 
 	private readonly CancellationTokenSource ctSource = new();
 
+	public Microservice(String name)
+	{
+		Name = name ?? throw new ArgumentNullException(nameof(name));
+	}
+
 	public Call<T> Call<T>(Microservice ms, CallOptions<T> callOptions)
 	{
 		var route = ms.Routes.First(r => r.Url == callOptions.Route) ?? throw new ArgumentException(string.Format("Could not find Route: {0} on given Microservice", callOptions.Route));
@@ -21,7 +28,8 @@ public class Microservice
 		var call =  new Call<T>
 		{
 			CallOptions = callOptions,
-			Route = (Route<T>) route,
+			TypedRoute = (Route<T>) route,
+			Microservice = ms
 		};
 		
 		calls.Add(call);
@@ -29,14 +37,28 @@ public class Microservice
 		return call;
 	}
 
-	public async Task<List<CallResult>[]> Simulate(TimeSpan duration)
+	public async Task<Dictionary<ICall, List<CallResult>>> Simulate(TimeSpan duration)
 	{
 		ctSource.CancelAfter(duration);
-		var tasks = calls.Select(c => PerformCall(c, ctSource.Token));
+		// var tasks = calls.Select(c => PerformCall(c, ctSource.Token));
+		//
+		// var results = await Task.WhenAll(tasks);
 
-		var results = await Task.WhenAll(tasks);
+		
 
-		return results;
+
+		var res = new Dictionary<ICall, List<CallResult>>();
+
+		var ts = calls.Select(c => Task.Run(async () =>
+		{
+			var callResults = await PerformCall(c, ctSource.Token);
+			res.Add(c, callResults);
+		}));
+
+		await Task.WhenAll(ts);
+
+		return res;
+
 
 	}
 
