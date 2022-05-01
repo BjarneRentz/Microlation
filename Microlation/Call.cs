@@ -7,17 +7,34 @@ public class Call<T> : ICall
 {
 	private readonly Stopwatch watch = new();
 
+	/// <summary>
+	///     Generic version of the route.
+	/// </summary>
 	public Route<T> TypedRoute;
 
+	/// <summary>
+	///     Functions that allow custom result validation.
+	/// </summary>
+	/// <remarks>
+	///     Can be added easily with the fluent <see cref="Extensions.Validate{T}" /> extension method.
+	/// </remarks>
 	public List<Func<T, bool>> Validators { get; } = new();
 
+	/// <summary>
+	///     Options of the call.
+	/// </summary>
 	public CallOptions<T> CallOptions { private get; init; }
 
+	/// <inheritdoc cref="ICall.Source" />
 	public Microservice Source { get; init; }
+
+	/// <inheritdoc cref="ICall.Destination" />
 	public Microservice Destination { get; init; }
 
+	/// <inheritdoc cref="ICall.Route" />
 	public IRoute Route => TypedRoute;
 
+	/// <inheritdoc cref="ICall.Execute" />
 	public async Task<CallResult> Execute(CancellationToken token, int iteration = 0)
 	{
 		await Task.Delay(CallOptions.Interval(iteration), token);

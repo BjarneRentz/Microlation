@@ -8,6 +8,10 @@ public class Microservice
 	private readonly List<ICall> calls = new();
 
 	private readonly CancellationTokenSource ctSource = new();
+
+	/// <summary>
+	///     Name for representation purposes, <see cref="ICall.CallUri" />.
+	/// </summary>
 	public string Name;
 
 	/// <summary>
@@ -20,6 +24,14 @@ public class Microservice
 		Name = name ?? throw new ArgumentNullException(nameof(name));
 	}
 
+	/// <summary>
+	///     Creates a new Call.
+	/// </summary>
+	/// <param name="ms"><see cref="Microservice" /> that gets called.</param>
+	/// <param name="callOptions">Options of the call, among others the <see cref="Route{T}"/.></param>
+	/// <typeparam name="T">Type of the <see cref="Route{T}" /> that gets called.</typeparam>
+	/// <returns></returns>
+	/// <exception cref="ArgumentException">Given Route is not valid.</exception>
 	public Call<T> Call<T>(Microservice ms, CallOptions<T> callOptions)
 	{
 		var route = ms.Routes.First(r => r.Url == callOptions.Route) ??
@@ -39,6 +51,11 @@ public class Microservice
 		return call;
 	}
 
+	/// <summary>
+	///     Simulates the Microservice by executing the calls for the given duration.
+	/// </summary>
+	/// <param name="duration">Duration of the simulation.</param>
+	/// <returns>The results of each call (<see cref="CallResult" />) grouped by the <see cref="ICall" />.</returns>
 	public async Task<Dictionary<ICall, List<CallResult>>> Simulate(TimeSpan duration)
 	{
 		ctSource.CancelAfter(duration);
