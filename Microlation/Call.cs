@@ -14,7 +14,8 @@ public class Call<T> : ICall
 
 	public Route<T> TypedRoute;
 
-	public Microservice Microservice { get; init; }
+	public Microservice Source { get; init; }
+	public Microservice Destination { get; init; }
 
 	public IRoute Route => TypedRoute;
 
