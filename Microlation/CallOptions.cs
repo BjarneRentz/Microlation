@@ -11,7 +11,7 @@ public class CallOptions<T>
 	/// <summary>
 	///     Policies that are used for the call.
 	/// </summary>
-	public ISyncPolicy<T> Policies { get; set; }
+	public ISyncPolicy<T>? Policies { get; set; }
 
 	/// <summary>
 	///     Route that will be called.

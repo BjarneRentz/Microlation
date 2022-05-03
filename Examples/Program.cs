@@ -12,28 +12,21 @@ var latency =
 
 var faults = latency.Wrap(error);
 
-var ms1 = new Microservice("MS1")
-{
-	Routes = new List<IRoute>
-	{
-		new Route<int> { Url = "Id", Value = () => 1, Faults = faults }
-	}
-};
+var ms1 = new Microservice("MS1");
 var ms2 = new Microservice("MS2")
 {
 	Routes = new List<IRoute>
 	{
-		new Route<int> { Url = "Id", Value = () => 1, Faults = faults },
+		new Route<int> { Url = "Id", Value = () => 1, },
 		new Route<int> {Url = "Age", Value = () => 50, Faults = faults}
 	}
 };
 
-var call = ms1
-	.Call(ms2,
+ms1.Call(ms2,
 		new CallOptions<int>
 		{
 			Route = "Id",
-			Policies = Policy<int>.Handle<Exception>().Retry(),
+			//Policies = Policy<int>.Handle<Exception>().Retry(),
 			Interval = (_) => TimeSpan.FromMilliseconds(Random.Shared.Next(100,700)) ,
 		})
 	.Validate(value => value != 0);
@@ -46,21 +39,12 @@ ms1.Call(ms2,
 		Interval = (_) => TimeSpan.FromMilliseconds(Random.Shared.Next(100,700)) ,
 	});
 
-ms2.Call(ms1, new CallOptions<int>
-{
-	Route="Id",
-	Policies = Policy<int>.Handle<Exception>().Retry(),
-	Interval = (_) => TimeSpan.FromMilliseconds(Random.Shared.Next(100,700))
-});
-
-
 
 var sim = new Simulation
 {
 	Microservices =
 	{
 		ms1,
-		ms2
 	}
 };
 
