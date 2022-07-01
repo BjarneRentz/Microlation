@@ -23,7 +23,7 @@ public class Call<T> : ICall
 	/// <summary>
 	///     Options of the call.
 	/// </summary>
-	public CallOptions<T> CallOptions { private get; init; }
+	public CallOptions<T> CallOptions { get; init; }
 
 	/// <inheritdoc cref="ICall.Source" />
 	public Microservice Source { get; init; }

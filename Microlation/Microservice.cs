@@ -7,7 +7,7 @@ public class Microservice
 {
 	private readonly List<ICall> calls = new();
 
-	private readonly CancellationTokenSource ctSource = new();
+	private CancellationTokenSource ctSource = new();
 
 	/// <summary>
 	///     Name for representation purposes, <see cref="ICall.CallUri" />.
@@ -58,6 +58,7 @@ public class Microservice
 	/// <returns>The results of each call (<see cref="CallResult" />) grouped by the <see cref="ICall" />.</returns>
 	public async Task<Dictionary<ICall, List<CallResult>>> Simulate(TimeSpan duration)
 	{
+		ctSource = new();
 		ctSource.CancelAfter(duration);
 		// var tasks = calls.Select(c => PerformCall(c, ctSource.Token));
 		//
