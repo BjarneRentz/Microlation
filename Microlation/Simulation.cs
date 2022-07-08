@@ -15,12 +15,14 @@ public class Simulation
 	///     Simulates the set of Microservices for the given duration.
 	/// </summary>
 	/// <param name="duration">Of the simulation.</param>
+	/// <param name="printProgress">Enable or disable the output of the remaining time.</param>
 	/// <returns>
 	///     The results of each call (<see cref="CallResult" />) grouped by the representing <see cref="ICall" />
 	/// </returns>
-	public async Task<Dictionary<ICall, List<CallResult>>> Run(TimeSpan duration)
+	public async Task<Dictionary<ICall, List<CallResult>>> Run(TimeSpan duration, bool printProgress = true)
 	{
-		ShowState(duration);
+		if(printProgress)
+			ShowState(duration);
 		
 		var tasks = Microservices.Select(m => m.Simulate(duration));
 
