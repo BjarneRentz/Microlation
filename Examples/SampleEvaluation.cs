@@ -1,4 +1,6 @@
 ﻿using System.Collections.Concurrent;
+using System.Data;
+using System.Text;
 using Microlation;
 using Polly;
 using Polly.Contrib.Simmy;
@@ -10,34 +12,115 @@ namespace Examples;
 
 public class SampleEvaluation
 {
+	private static object lockObject = new ();
+	
 	public static async Task Run()
 	{
 		int[] timeouts = { 1000, 1500, 2000, 2500, 3000 };
 		int[] retries = { 0, 1, 2, 3, 4 };
+		double[] availabilities = { 0.5, 0.6, 0.7, 0.8, 0.9, 1 };
 
-		var simulations = new List<Simulation>();
 
-		var dictionary = new ConcurrentDictionary<(int Timeout, int Retries), List<CallResult>>();
-		var tasks = new List<Task>();
+
+		var table = BuildTable(timeouts, retries);
+		
+		var tasks = (from timeout in timeouts
+			from retry in retries
+			from availability in availabilities
+			select Task.Run(async () =>
+			{
+				var result = await CreateSimulation(timeout, retry, availability).Run(TimeSpan.FromSeconds(600), false);
+				AddRow(table, availability, timeout, retry, result.Values.First().Sum(r => r.CallDuration.TotalMilliseconds), result.Values.First().Count(r => r.Exception != null));
+			})).ToList();
+
+		await Task.WhenAll(tasks);
+
+		
+		PrintTable(table);
+
+
+		Console.ReadKey();
+	}
+
+	private static void AddRow(DataTable table
+	, double availability, int timeout, int retry, double connectionTime, int errorCount)
+	{
+		lock (lockObject)
+		{
+			var row = table.Rows.Find(new object[]
+			{
+				availability
+			});
+			if (row == null)
+			{
+				row = table.NewRow();
+				row["Availability"] = availability;
+				row[$"{timeout}|{retry}_T"] = connectionTime;
+				row[$"{timeout}|{retry}_E"] = errorCount;
+				table.Rows.Add(row);
+			}
+			else
+			{
+				row[$"{timeout}|{retry}_T"] = connectionTime;
+				row[$"{timeout}|{retry}_E"] = errorCount;
+			}
+			
+			
+		}
+	}
+
+	private static DataTable BuildTable(int[] timeouts, int[] retrys)
+	{
+		var table = new DataTable("Evaluation");
+
+		DataColumn column;
+
+		column = new DataColumn();
+		column.Caption = "Availability";
+		column.ColumnName = "Availability";
+		column.DataType = typeof(double);
+
+
+		table.Columns.Add(column);
+		table.PrimaryKey = new []{column};
 
 		foreach (var timeout in timeouts)
 		{
-			foreach (var retry in retries)
-				tasks.Add(Task.Run(async () =>
-				{
-					var result = await CreateSimulation(timeout, retry).Run(TimeSpan.FromMinutes(1));
-					dictionary.TryAdd((timeout, retry), result.Values.First());
-				}));
+			foreach (var retry in retrys)
+			{
+				var col = new DataColumn();
+				col.Caption = $"{timeout}|{retry}_T";
+				col.ColumnName = $"{timeout}|{retry}_T";
+				col.DataType = typeof(double);
+				table.Columns.Add(col);
+
+				col = new DataColumn();
+				col.Caption = $"{timeout}|{retry}_E";
+				col.ColumnName = $"{timeout}|{retry}_E";
+				col.DataType = typeof(int);
+				table.Columns.Add(col);
+			}
 		}
 
-		//var tasks = simulations.Select(s => s.Run(TimeSpan.FromMinutes(1)));
-		await Task.WhenAll(tasks);
+		return table;
+	}
 
-		await Task.Delay(2000);
+	private static void PrintTable(DataTable table)
+	{
+		var sb = new StringBuilder(); 
 
-		EvaluateResults(dictionary);
+		IEnumerable<string> columnNames = table.Columns.Cast<DataColumn>().
+			Select(column => column.ColumnName);
+		sb.AppendLine(string.Join(";", columnNames));
 
-		Console.ReadKey();
+		foreach (DataRow row in table.Rows)
+		{
+			IEnumerable<string> fields = row.ItemArray.Select(field => field.ToString());
+			sb.AppendLine(string.Join(";", fields));
+		}
+
+		Console.WriteLine(sb.ToString());
+		File.WriteAllText("Results.csv", sb.ToString());
 	}
 
 	private static void EvaluateResults(IDictionary<(int Timeout, int Retry), List<CallResult>> results)
@@ -54,11 +137,11 @@ public class SampleEvaluation
 				kvp.Value.Count(r => r.Valid));
 	}
 
-	private static Simulation CreateSimulation(int timeout, int retries)
+	private static Simulation CreateSimulation(int timeout, int retries, double availability)
 	{
+		var injectionRate = Math.Round(1 - availability, 1);
 		var faultPolicy = MonkeyPolicy
-			.InjectLatency(with => with.Latency(TimeSpan.FromSeconds(2)).InjectionRate(0.1).Enabled())
-			.Wrap(MonkeyPolicy.InjectResult<int>(with => with.Result(4).InjectionRate(0.1).Enabled()));
+			.InjectLatency(with => with.Latency(TimeSpan.FromSeconds(4)).InjectionRate(injectionRate).Enabled()).AsPolicy<int>();
 
 		var caller = new Microservice("Caller");
 		var target = new Microservice("Target")
@@ -80,7 +163,7 @@ public class SampleEvaluation
 			Interval = _ => TimeSpan.FromMilliseconds(500),
 			Policies = Policy<int>.Handle<TimeoutRejectedException>().Retry(retries)
 				.Wrap(Policy.Timeout<int>(TimeSpan.FromMilliseconds(timeout)))
-		}).Validate(value => value == 3);
+		});
 
 		return new Simulation
 		{
